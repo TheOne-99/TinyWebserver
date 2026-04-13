@@ -1,3 +1,4 @@
+#pragma once
 #include<iostream>
 #include <cstring>   //perror
 #include<sys/uio.h>

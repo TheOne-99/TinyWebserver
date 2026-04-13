@@ -45,7 +45,9 @@ void TestThreadPool() {
     getchar();
 }
 
+#if 0
 int main() {
     //TestLog();
     TestThreadPool();
 }
+#endif

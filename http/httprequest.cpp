@@ -4,6 +4,7 @@ const std::unordered_set<std::string> HttpRequest::DEFAULT_HTML
 {
     "/index" , "/register" , "/login",
     "/welcome" , "/video" , "/picture",
+    "/search",
 };
 
 const std::unordered_map<std::string , int> HttpRequest :: DEFAULT_HTML_TAG
@@ -104,7 +105,7 @@ void HttpRequest::ParsePath_()
     }
     else{
         // 如果用户敲了 /login，我们帮他自动补全为 /login.html
-        for(auto& item:DEFAULT_HTML)
+        for(auto &item:DEFAULT_HTML)
         {
             if(item == path_)
             {
@@ -128,7 +129,7 @@ bool HttpRequest::ParseRequestLine_(const std::string& line)
     //问题5：这个if语句是在干什么？
     if(std::regex_match(line ,subMatch ,patten))
     {
-        method_ = subMatch[1];  // 第1个括号抓到的: "GET" 或 "POST"
+        method_ = subMatch[1];  // 第1个括号（对应上面patten定义的括号中的内容）抓到的: "GET" 或 "POST"
         path_ = subMatch[2];  // 第2个括号抓到的: "/index.html"
         version_ = subMatch[3];  // 第3个括号抓到的: "1.1"
 
@@ -145,7 +146,7 @@ void HttpRequest::ParseHeader_(const std::string& line)
     /*
     1：?代表前面的一个字符可以出现0次或1次
     2：*代表前面的一个字符可以出现0次或多次
-    3：. 表示 匹配除换行符 \n 之外的任何单字符，*表示零次或多次。
+    3：. 表示匹配除换行符 \n 之外的任何单字符，*表示零次或多次。
     所以.*在一起就表示任意字符出现零次或多次。
     4：^限定开头；取反：[^a]表示“匹配除了a的任意字符”，只要不是在[]里面都是限定开头
     */
@@ -177,6 +178,7 @@ int HttpRequest::ConverHex(char ch)
 {
     if(ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
     if(ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
+    if(ch >= '0' && ch <= '9') return ch - '0';
     return ch;
 }
 
@@ -211,6 +213,30 @@ void HttpRequest::ParsePost_()
     }
 }
 
+std::string HttpRequest::UrlDecode(const std::string& str)
+{
+    std::string res;
+    for(size_t i = 0; i < str.size(); i++)
+    {
+        if(str[i] == '%')
+        {
+            if(i+2 < str.size())
+            {
+                // 直接计算出真实的字符，存进结果字符串中！
+                char ch = ConverHex(str[i+1]) * 16 + ConverHex(str[i+2]);
+                res += ch;
+                i += 2;
+            }
+        }else if(str[i] == '+')
+        {
+            res += ' ';  //'+'替换为空格
+        }else{
+            res += str[i];
+        }
+    }
+    return res;
+}
+
 // 极其底层的字符串切片：解析 "username=admin&password=123" 这种格式
 void HttpRequest::ParseFromUrlencoded_()
 {
@@ -219,7 +245,7 @@ void HttpRequest::ParseFromUrlencoded_()
     std::string key , value;
     int num = 0;
     int n = body_.size();
-    int i = 0 , j = 0;
+    int i = 0 , j = 0;  //i不断往后移动，当遇到特殊符号需要存相应的值时，j记录下一个值开始的地方
 
     for(; i < n ; i ++)
     {
@@ -231,32 +257,28 @@ void HttpRequest::ParseFromUrlencoded_()
             j = i + 1;  // 记录 value 开始的位置
             break;
         
-        case '+':  // 浏览器传空格时会变成加号，这里把它变回空格
-            body_[i] = ' ';
-            break;
-        
-        case '%': // 中文或特殊字符会被转码成 "%XX" 格式的 16 进制
-            // 计算那两个 16 进制字符对应的真实 10 进制 ASCII 码
-            num = ConverHex(body_[i+1]) * 16 + ConverHex(body_[i+2]);
-            body_[i+2] = num % 10 + '0';
-            body_[i+1] = num / 10 + '0';
-            i += 2;  // 跳过后面两个字符
-            break;
         case '&':  // 遇到了与号，说明这个键值对结束了！
             value = body_.substr(j , i - j);  // 截取 value
             j = i + 1;  // 更新下一个 key 的起点
-            post_[key] = value;  // 存入 post_ 哈希表！
+            post_[key] = UrlDecode(value);  // 截取出来之后，再进行解码，然后存入哈希表！
             LOG_DEBUG("%s = %s" , key.c_str() , value.c_str());
             break;
         default:
             break;
         }
     }
-    assert(j <= i);    // 防御性编程     
+    assert(j <= i);    // 防御性编程
+    /*
+    由于上面的 switch 是在遇到 & 符号时，才把键值对存进 post_ 哈希表。
+    但是，表单里的最后一个键值对，后面是没有 & 符号的！
+    （比如 username=a&password=b，b后面啥也没有）。
+     所以循环结束后，必须用这个 IF 判断一下：如果还有截取出来的 key 没存进去
+     赶紧把它和最后那个 value 存进去，防止漏掉最后一个参数！
+    */     
     if(post_.count(key) == 0 && j < i)
     {
         value = body_.substr(j , i - j);
-        post_[key] = value;
+        post_[key] = UrlDecode(value);
     }                                                                                                                                                                       
 }
 
@@ -288,7 +310,7 @@ bool HttpRequest::UserVerify(const std::string& name , const std::string& pwd , 
 
 // 拼装 SQL 查询语句 (这里是直接拼接字符串，在真实的工业项目中会有 SQL 注入风险，但作为项目练习非常经典)
 
-    snprintf(order , 256 , "SELECT username , password FROM user WHERE username='%s' LIMIT 1" , name.c_str());\
+    snprintf(order , 256 , "SELECT username , password FROM user WHERE username='%s' LIMIT 1" , name.c_str());
     LOG_DEBUG("%S" , order);
 
     // mysql_query 执行这条 SQL。返回非 0 表示执行失败。
@@ -297,7 +319,7 @@ bool HttpRequest::UserVerify(const std::string& name , const std::string& pwd , 
         mysql_free_result(res);
         return false;
     }
-    res = mysql_store_result(sql);   // 把 MySQL 返回的结果保存到 res 变量中
+    res = mysql_store_result(sql);   // 把 MySQL 返回的结果交给res指针管理
     j = mysql_num_fields(res);  // 获取有多少列数据
     fields = mysql_fetch_field(res);    // 获取列名等元数据
 

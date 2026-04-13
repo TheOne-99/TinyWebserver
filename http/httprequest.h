@@ -61,15 +61,14 @@ private:
 
     // 存储解析出来的数据
     std::string method_ , path_ , version_ , body_;
+    std::string UrlDecode(const std::string& str);
     std::unordered_map<std::string , std::string> header_;    // 存请求头 (键值对)
     std::unordered_map<std::string , std::string> post_;  // 存 POST 数据 (键值对)   问题2：为什么请求头和POST数据都是键值对
 
     // 静态常量，存放默认允许访问的 HTML 页面，提高安全性和效率
     static const std::unordered_set<std::string> DEFAULT_HTML;
     static const std::unordered_map<std::string ,int> DEFAULT_HTML_TAG;
-
     static int ConverHex(char ch);     // 辅助函数：把字母 A-F 转成数字 10-15
-
 };
 
 #endif
