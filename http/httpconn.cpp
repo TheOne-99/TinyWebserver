@@ -166,8 +166,7 @@ ssize_t HttpConn::write(int* saveErrno) {
             iov_[0].iov_base = (uint8_t*)iov_[0].iov_base + len;
             iov_[0].iov_len -= len;
             writeBuff_.Retrieve(len); // Buffer 读游标后移
-        }
-        
+        }      
     // 循环条件：如果开启了 ET 模式，或者待发送的数据超过了 10KB (为了防饿死其他连接，单次最大写点限制，然后让出循环)，就继续尝试写
     } while (isET || ToWriteBytes() > 10240);
     return len;
