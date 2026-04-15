@@ -169,7 +169,7 @@ void HeapTimer :: tick()
         return;
     }
 
-    while(!heap_.empty())   
+    while(!heap_.empty())
     {
         // 直接看向堆顶（数组第 0 个元素）！因为它是全场最快到期的！
         TimerNode node = heap_.front();

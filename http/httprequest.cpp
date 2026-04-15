@@ -116,6 +116,7 @@ void HttpRequest::ParsePath_()
     }
 }
 
+/*
 bool HttpRequest::ParseRequestLine_(const std::string& line)
 {
     // 【正则表达式详解】：
@@ -139,17 +140,47 @@ bool HttpRequest::ParseRequestLine_(const std::string& line)
     LOG_ERROR("RequestLine Error");
     return false;
 }
+*/
 
+bool HttpRequest::ParseRequestLine_(const std::string& line) {
+    // 1. 找第一个空格的位置
+    size_t pos1 = line.find(' ');
+    if (pos1 == std::string::npos) {
+        LOG_ERROR("RequestLine Error");
+        return false;
+    }
+    // 2. 找第二个空格的位置
+    size_t pos2 = line.find(' ', pos1 + 1);
+    if (pos2 == std::string::npos) {
+        LOG_ERROR("RequestLine Error");
+        return false;
+    }
+
+    // 3. 完美切割出三个关键信息！
+    method_ = line.substr(0, pos1);
+    path_ = line.substr(pos1 + 1, pos2 - pos1 - 1);
+    version_ = line.substr(pos2 + 1);
+    
+    // 4. 极其关键的体验优化：如果浏览器只请求了 "/"，我们默认给它发 "/index.html"
+    if (path_ == "/") {
+        path_ = "/index.html";
+    }
+    
+    state_ = HEADERS; // 状态机流转到下一站
+    return true;
+}
+
+/*
 void HttpRequest::ParseHeader_(const std::string& line)
 {
     // 正则：抓取 "Key: Value" 格式
-    /*
+   
     1：?代表前面的一个字符可以出现0次或1次
     2：*代表前面的一个字符可以出现0次或多次
     3：. 表示匹配除换行符 \n 之外的任何单字符，*表示零次或多次。
     所以.*在一起就表示任意字符出现零次或多次。
     4：^限定开头；取反：[^a]表示“匹配除了a的任意字符”，只要不是在[]里面都是限定开头
-    */
+    
     std::regex patten("^([^:]*): ?(.*)$");
     std::smatch subMatch;
 
@@ -160,6 +191,32 @@ void HttpRequest::ParseHeader_(const std::string& line)
         // 【非常巧妙】：HTTP 头部和身体之间有一个空行 \r\n。
         // 当读到空行时，没有任何冒号，正则表达式必然失败！
         // 一旦失败，说明头部全读完了，下面该读身体了！
+        state_ = BODY;
+    }
+}
+*/
+
+// 彻底抛弃 regex，使用手写字符串寻找，不仅安全，性能还高几十倍
+void HttpRequest::ParseHeader_(const std::string& line) {
+    // 遇到空行，说明头部信息结束，准备解析 Body
+    if (line.empty()) {
+        state_ = BODY;
+        return;
+    }
+    
+    // 寻找冒号的位置，以此切分 Key 和 Value
+    size_t pos = line.find(':');
+    if (pos != std::string::npos) {
+        std::string key = line.substr(0, pos);
+        std::string value = line.substr(pos + 1);
+        
+        // 抹除 value 前面的空格（浏览器通常会在冒号后加一个空格）
+        if (!value.empty() && value[0] == ' ') {
+            value = value.substr(1);
+        }
+        header_[key] = value;
+    }
+    else {
         state_ = BODY;
     }
 }

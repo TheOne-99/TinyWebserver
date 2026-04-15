@@ -32,6 +32,11 @@ void HttpConn::Init(int fd , const sockaddr_in& addr)
     readBuff_.RetrieveAll();
 
     isClose_ = false;  // 标记当前连接状态为：活跃/开启！
+    iovCnt_ = 0;
+    iov_[0].iov_base = nullptr;
+    iov_[0].iov_len = 0;
+    iov_[1].iov_base = nullptr;
+    iov_[1].iov_len = 0;
     // 打印一条日志。这里调用了我们下面要讲的 GetIP() 和 GetPort()
     LOG_INFO("Client[%d](%s:%d) in , userCount:%d" , fd_ , GetIP() , GetPort() ,(int)userCount);
 }

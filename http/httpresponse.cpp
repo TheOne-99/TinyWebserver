@@ -194,9 +194,9 @@ void HttpResponse::AddContent_(Buffer& buff)
     // PROT_READ 表示这块内存只读，MAP_PRIVATE 表示私有映射。
     // mmRet 会拿到这块内存的首地址指针
     //问题2：mmap的用法是什么？这里为什么要用mmap？
-
-    int* mmRet = (int*)mmap(0 , mmFlieStat_.st_size , PROT_READ , MAP_PRIVATE ,srcFd , 0);
     /*
+    int* mmRet = (int*)mmap(0 , mmFlieStat_.st_size , PROT_READ , MAP_PRIVATE ,srcFd , 0);
+
      2. 🌟 mmap (Memory Map)：将磁盘文件直接映射到内存！🌟
    参数1：0（让操作系统自动分配内存地址）
     参数2：文件大小
@@ -204,15 +204,21 @@ void HttpResponse::AddContent_(Buffer& buff)
     参数4：MAP_PRIVATE（私有映射，读操作不会影响别处）
     参数5：srcFd（刚刚打开的文件句柄）
    参数6：0（偏移量，从文件头开始映射）
-    */
+    
     if(*mmRet == -1)   // -1 在 mmap 里代表映射失败 (MAP_FAILED)
     {
         ErrorContent(buff, "File NotFound!");
         return;
     }
+    */
+    void* mmRet = mmap(0, mmFlieStat_.st_size, PROT_READ, MAP_PRIVATE, srcFd, 0);
+    if (mmRet == MAP_FAILED) {
+    ErrorContent(buff, "File NotFound!");
+    return;
+        }
 
     // 将拿到的内存地址保存给类的成员变量 mmFile_
-    mmFile_ = (char*)mmRet;\
+    mmFile_ = (char*)mmRet;
     close(srcFd);  // 文件内容已经在内存里了，立刻关闭文件句柄，节省操作系统的句柄资源
 
     // 【最关键的一句】：
@@ -253,4 +259,22 @@ void HttpResponse::ErrorContent(Buffer& buff , std::string message)
     // 这里的场景下，网页数据是真的进了 Buffer 的，而没用 mmap！
     buff.Append(body);
 
+}
+
+// 返回映射文件的内存指针
+char* HttpResponse::File() {
+    return mmFile_;
+}
+
+// 返回映射文件的大小
+size_t HttpResponse::FileLen() const {
+    return mmFlieStat_.st_size;
+}
+
+// 解除内存映射（极其重要，防止内存泄漏）
+void HttpResponse::UnmapFile() {
+    if (mmFile_) {
+        munmap(mmFile_, mmFlieStat_.st_size);
+        mmFile_ = nullptr;
+    }
 }

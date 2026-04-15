@@ -21,7 +21,7 @@ public:
 
     void UnmapFile();     // 解除内存映射
     char* File();    // 获取映射后的文件内存指针
-    size_t FileLen();    //获取文件大小
+    size_t FileLen() const;    //获取文件大小
     
     void ErrorContent(Buffer& buff , std::string message);
     int Code() const { return code_; }

@@ -71,6 +71,7 @@ void TestPostRequest() {
     std::cout << std::endl;
 }
 
+#if 0
 int main() {
     // 1. 初始化日志系统 (必须有，否则 HTTPRequest 里的 LOG_DEBUG 会报错)
     Log::Instance()->init(0, "./log", ".log", 1024);
@@ -81,3 +82,4 @@ int main() {
 
     return 0;
 }
+#endif

@@ -1,7 +1,5 @@
 #include "log.h"
 
-
-
 Log::Log()
 {
     fp_ = nullptr;
