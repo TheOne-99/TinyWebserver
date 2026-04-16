@@ -34,13 +34,13 @@ WebServer::WebServer(
             if(isClose_) { LOG_ERROR("========== Server init error!==========\n"); }
             else{
             LOG_INFO("========== Server init ==========\n");
-            LOG_INFO("Port:%d, OpenLinger: %s", port_, OptLinger? "true":"false");
-            LOG_INFO("Listen Mode: %s, OpenConn Mode: %s",
+            LOG_INFO("Port:%d, OpenLinger: %s\n", port_, OptLinger? "true":"false");
+            LOG_INFO("Listen Mode: %s, OpenConn Mode: %s\n",
                             (listenEvent_ & EPOLLET ? "ET": "LT"),
                             (connEvent_ & EPOLLET ? "ET": "LT"));
-            LOG_INFO("LogSys level: %d", logLevel);
-            LOG_INFO("srcDir: %s", HttpConn::srcDir);
-            LOG_INFO("SqlConnPool num: %d, ThreadPool num: %d", connPoolNum, threadNum);
+            LOG_INFO("LogSys level: %d\n", logLevel);
+            LOG_INFO("srcDir: %s\n", HttpConn::srcDir);
+            LOG_INFO("SqlConnPool num: %d, ThreadPool num: %d\n", connPoolNum, threadNum);
             }
         }
     }
@@ -146,7 +146,7 @@ bool WebServer::InitSocket_()
 int WebServer::SetFdNonblock(int fd) {
     assert(fd > 0);
     // fcntl 是 Linux 底层专门用来修改文件句柄属性的神器
-    return fcntl(fd, F_SETFL, fcntl(fd, F_GETFD, 0) | O_NONBLOCK);
+    return fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
 }
 
 

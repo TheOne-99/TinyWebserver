@@ -81,7 +81,7 @@ bool HttpRequest::parse(Buffer& buff)
             break;
         }
 
-        if(lineEnd == buff.BeginWrite())
+        if(lineEnd == buff.BeginWriteConst())
         {
             break;
         }
@@ -159,7 +159,12 @@ bool HttpRequest::ParseRequestLine_(const std::string& line) {
     // 3. 完美切割出三个关键信息！
     method_ = line.substr(0, pos1);
     path_ = line.substr(pos1 + 1, pos2 - pos1 - 1);
-    version_ = line.substr(pos2 + 1);
+    std::string httpVer = line.substr(pos2 + 1);
+    if(httpVer.substr(0, 5) == "HTTP/") {
+        version_ = httpVer.substr(5);  // 只取 "1.1"
+    } else {
+        version_ = httpVer;
+    }
     
     // 4. 极其关键的体验优化：如果浏览器只请求了 "/"，我们默认给它发 "/index.html"
     if (path_ == "/") {
@@ -214,11 +219,17 @@ void HttpRequest::ParseHeader_(const std::string& line) {
         if (!value.empty() && value[0] == ' ') {
             value = value.substr(1);
         }
+        // 在 ParseHeader_ 里，去掉value末尾可能存在的\r
+        while(!value.empty() && (value.back() == '\r' || value.back() == ' ')) 
+        {
+            value.pop_back();
+        }
         header_[key] = value;
     }
     else {
         state_ = BODY;
     }
+
 }
 
 void HttpRequest::ParseBody_(const std::string& line)
@@ -373,10 +384,10 @@ bool HttpRequest::UserVerify(const std::string& name , const std::string& pwd , 
     // mysql_query 执行这条 SQL。返回非 0 表示执行失败。
     if(mysql_query(sql , order))
     {
-        mysql_free_result(res);
         return false;
     }
     res = mysql_store_result(sql);   // 把 MySQL 返回的结果交给res指针管理
+    if(res == nullptr) { return false; }  
     j = mysql_num_fields(res);  // 获取有多少列数据
     fields = mysql_fetch_field(res);    // 获取列名等元数据
 

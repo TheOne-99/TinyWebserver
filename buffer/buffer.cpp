@@ -98,13 +98,13 @@ void Buffer::Append(const std::string& str)
     Append(str.c_str() , str.size());
 }
 
-void Append(const void* data , size_t len)
+void Buffer:: Append(const void* data , size_t len)
 {
     Append(static_cast<const char*>(data) , len);
 }
 
 // 将buffer中的读下标的地方放到该buffer中的写下标位置
-void Append(const Buffer& buff) {
+void Buffer:: Append(const Buffer& buff) {
     Append(buff.Peek(), buff.ReadableBytes());
 }
 
@@ -127,7 +127,7 @@ ssize_t Buffer:: ReadFd(int fd , int* Errno)
     它会优先把数据往 iov[0] 里填；
     如果 iov[0] 填满了数据还没读完，它会自动继续往 iov[1] 里填。
     返回值 len：实际读到的总字节数。如果返回 -1，说明出错了。*/
-    size_t len = readv(fd ,iov ,2);
+    ssize_t len = readv(fd ,iov ,2);
 
     if(len < 0)
     {
@@ -138,7 +138,7 @@ ssize_t Buffer:: ReadFd(int fd , int* Errno)
     }else
     {
         writePos_ = buffer_.size(); // 写区满了，下标移到最后
-        Append(buff , static_cast<size_t>(len-writeable)); //剩余的长度
+        Append(buff , static_cast<size_t>(len)-writeable); //剩余的长度
         /*先把 Buffer 的写游标移到末尾（满了）。
         然后调用 Append，把栈区 buff 里溢出的那部分数据 len - writeable 追加进来。
         由于 Buffer 内部空间不够，这个 Append 操作会自动触发后面的 MakeSpace_ 进行扩容。*/

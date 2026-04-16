@@ -37,7 +37,7 @@ public:
     void Append(const std::string& str);
     void Append(const char* str , size_t len);
     void Append(const void* data , size_t len);
-    void Append(const Buffer* buff);
+    void Append(const Buffer& buff);
 
     ssize_t ReadFd(int Fd , int* Errno);  //从文件描述符（通常是 Socket）中读取数据到 Buffer 中。
     ssize_t WriteFd(int Fd , int* Errno);  //将 Buffer 中可读的数据写入到文件描述符（Socket）中。写成功后，移动读指针。

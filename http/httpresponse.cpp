@@ -128,7 +128,7 @@ void HttpResponse :: AddStateLine_(Buffer& buff)
     }
     // 【核心拼装】：把协议版本、状态码、描述词拼接在一起，末尾加上极其重要的回车换行 \r\n
     // buff.Append() 就是调用第一天写的 Buffer，把这串字塞进内存里！
-    buff.Append("HTTP/1.1" + std::to_string(code_) + " " + status + "\r\n");
+    buff.Append("HTTP/1.1 " + std::to_string(code_) + " " + status + "\r\n");
 }
 
 std::string HttpResponse::GetFileType_()
@@ -162,19 +162,19 @@ std::string HttpResponse::GetFileType_()
 
 void HttpResponse :: AddHeader_(Buffer& buff)
 {
-    buff.Append("Connection:");
+    buff.Append("Connection: ");
     // 根据上一节 HttpRequest 解析出的结果，看看客户端支不支持长连接
     if(isKeepAlive_)
     {
         buff.Append("keep-alive\r\n");  // 告诉浏览器：我也支持长连接！
         // 这一行是长连接的参数：最多保持6次请求不断开，如果闲置了 120 秒就强制断开
-        buff.Append("keep-alive: max=6, timeout=120\r\n");
+        buff.Append("keep-Alive: max=6, timeout=120\r\n");
     }else{
         // 如果不支持，告诉浏览器：发完这条我就关了 (close)
         buff.Append("close\r\n");
     }
     // 写入 Content-type 字段，调用上面刚讲的 GetFileType_ 拿到文件格式
-    buff.Append("Conten-type: " + GetFileType_() + "\r\n");
+    buff.Append("Content-type: " + GetFileType_() + "\r\n");
 }
 
 void HttpResponse::AddContent_(Buffer& buff)

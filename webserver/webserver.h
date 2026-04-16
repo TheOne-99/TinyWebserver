@@ -68,7 +68,7 @@ private:
     std::unique_ptr<Epoller> epoller_;    //epoll
 
     // 【极其核心】：保存所有连进来的客户！
- // 键(int) 是 Socket 句柄，值(HttpConn) 是代表这个客户的专属连接对象！
+    // 键(int) 是 Socket 句柄，值(HttpConn) 是代表这个客户的专属连接对象！
     std::unordered_map<int , HttpConn> users_;
 };
 
